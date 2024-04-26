@@ -58,9 +58,10 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
         .eq('date', _selectedDate.toString())
         .eq('crossover', _selectedCrossover);
 
-    if (response.isEmpty) {
-      return;
-    }
+    // print(response);
+    // if (response.isEmpty) {
+    //   return;
+    // }
 
     final List<dynamic> data = response;
     if (data.isNotEmpty) {
@@ -68,6 +69,9 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
         _responseData = data.map((entry) => Entry.fromJson(entry)).toList();
       });
     } else {
+      setState(() {
+        _responseData = [];
+      });
       // No data found
       // print('No data found for the selected date and crossover.');
     }
@@ -222,7 +226,17 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
                               );
                             },
                           )
-                        : const Center(child: Text("No data")),
+                        : const Center(
+                            child: Text(
+                              "💔\nNO STOCKS FOUND.!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red),
+                            ),
+                            
+                          ),
                   ),
           ],
         ),
