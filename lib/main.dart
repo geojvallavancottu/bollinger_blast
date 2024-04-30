@@ -1,4 +1,6 @@
+import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 // ignore: depend_on_referenced_packages
 import 'package:supabase/supabase.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -84,7 +86,7 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xff5aa212),
         title: const Text(
           '⚡ Bollinger Blast ⚡',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
@@ -171,7 +173,7 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
               width: MediaQuery.of(context).size.width,
               child: ElevatedButton(
                 style: const ButtonStyle(
-                  backgroundColor: MaterialStatePropertyAll(Colors.teal),
+                  backgroundColor: MaterialStatePropertyAll(Color(0xff5aa212)),
                 ),
                 onPressed: isLoading ? null : _fetchData,
                 child: isLoading
@@ -184,9 +186,10 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
                     : const Text(
                         'Get Data',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 16),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
                       ),
               ),
             ),
@@ -235,7 +238,6 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.red),
                             ),
-                            
                           ),
                   ),
           ],
@@ -253,6 +255,21 @@ void main() {
       fontFamily: 'Satoshi',
       primarySwatch: Colors.green,
     ),
-    home: const BollingerCrossView(),
+    home: const Splash(),
   ));
+}
+
+class Splash extends StatelessWidget {
+  const Splash({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSplashScreen(
+      splashIconSize: MediaQuery.of(context).size.width * .60,
+      splash: Lottie.asset('assets/icons/Animation - 1714463822927.json'),
+      nextScreen: const BollingerCrossView(),
+      duration: 2000,
+      splashTransition: SplashTransition.scaleTransition,
+    );
+  }
 }
