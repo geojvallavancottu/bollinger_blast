@@ -1,3 +1,4 @@
+import 'package:bolingerblast/stoclk_delivery.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,10 +24,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Satoshi',
         primarySwatch: Colors.green,
       ),
-      home:  Scaffold(
-        appBar: AppBar(title: const Text('RSI Crossover List')),
-        body: const MainScreen(),
-      ),
+      home: const MainScreen(),
     );
   }
 }
@@ -90,105 +88,122 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text("${selectedDate.toLocal()}".split(' ')[0]),
-              const SizedBox(height: 10.0),
-              ElevatedButton(
-                onPressed: () => _selectDate(context),
-                child: const Text('Select date'),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder(
-            future: fetchRsiCrossoverData(selectedDate),
-            builder:
-                (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-
-              final List<Map<String, dynamic>> data = snapshot.data ?? [];
-
-              return ListView.builder(
-                itemCount: data.length,
-                itemBuilder: (context, index) {
-                  final item = data[index];
-                  return ExpansionTile(
-                    trailing: InkWell(
-                      onTap: () async {
-                        final Uri url = Uri.parse(
-                            'https://in.tradingview.com/chart/?symbol=NSE%3A${item['stock']}');
-                        if (!await launchUrl(
-                          url,
-                          mode: LaunchMode.inAppWebView,
-                          webOnlyWindowName: kIsWeb ? '_blank' : '_self',
-                        )) {
-                          throw Exception('Could not launch $url');
-                        }
-                      },
-                      child: const Icon(Icons.arrow_right_alt_rounded),
-                    ),
-                    title: Text(
-                      item['stock'],
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle:
-                        Text('Cross Price Diff: ${item['cross_price_diff']}'),
-                    children: [
-                      FutureBuilder(
-                        future:
-                            fetchStockDeliveryData(item['stock'], selectedDate),
-                        builder: (context,
-                            AsyncSnapshot<List<Map<String, dynamic>>>
-                                snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-
-                          if (snapshot.hasError) {
-                            return Center(
-                                child: Text('Error: ${snapshot.error}'));
-                          }
-
-                          final List<Map<String, dynamic>> deliveryData =
-                              snapshot.data ?? [];
-
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: const ClampingScrollPhysics(),
-                            itemCount: deliveryData.length,
-                            itemBuilder: (context, index) {
-                              final deliveryItem = deliveryData[index];
-                              return ListTile(
-                                title: Text(
-                                    'Delivery: ${deliveryItem['delivery_percentage']}%'),
-                                subtitle: Text('Date: ${deliveryItem['date']}'),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('RSI Crossover List'),
+        actions: [
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => StockDeliverySearchPage()),
               );
             },
+            child: const Icon(Icons.list_alt),
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Text("${selectedDate.toLocal()}".split(' ')[0]),
+                const SizedBox(height: 10.0),
+                ElevatedButton(
+                  onPressed: () => _selectDate(context),
+                  child: const Text('Select date'),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: FutureBuilder(
+              future: fetchRsiCrossoverData(selectedDate),
+              builder: (context,
+                  AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                final List<Map<String, dynamic>> data = snapshot.data ?? [];
+
+                return ListView.builder(
+                  itemCount: data.length,
+                  itemBuilder: (context, index) {
+                    final item = data[index];
+                    return ExpansionTile(
+                      trailing: InkWell(
+                        onTap: () async {
+                          final Uri url = Uri.parse(
+                              'https://in.tradingview.com/chart/?symbol=NSE%3A${item['stock']}');
+                          if (!await launchUrl(
+                            url,
+                            mode: LaunchMode.inAppWebView,
+                            webOnlyWindowName: kIsWeb ? '_blank' : '_self',
+                          )) {
+                            throw Exception('Could not launch $url');
+                          }
+                        },
+                        child: const Icon(Icons.arrow_right_alt_rounded),
+                      ),
+                      title: Text(
+                        item['stock'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle:
+                          Text('Cross Price Diff: ${item['cross_price_diff']}'),
+                      children: [
+                        FutureBuilder(
+                          future: fetchStockDeliveryData(
+                              item['stock'], selectedDate),
+                          builder: (context,
+                              AsyncSnapshot<List<Map<String, dynamic>>>
+                                  snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
+
+                            if (snapshot.hasError) {
+                              return Center(
+                                  child: Text('Error: ${snapshot.error}'));
+                            }
+
+                            final List<Map<String, dynamic>> deliveryData =
+                                snapshot.data ?? [];
+
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: const ClampingScrollPhysics(),
+                              itemCount: deliveryData.length,
+                              itemBuilder: (context, index) {
+                                final deliveryItem = deliveryData[index];
+                                return ListTile(
+                                  title: Text(
+                                      'Delivery: ${deliveryItem['delivery_percentage']}%'),
+                                  subtitle:
+                                      Text('Date: ${deliveryItem['date']}'),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
