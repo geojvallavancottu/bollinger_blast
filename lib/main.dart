@@ -1,209 +1,275 @@
-import 'package:bolingerblast/stoclk_delivery.dart';
-import 'package:flutter/foundation.dart';
+import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lottie/lottie.dart';
+// ignore: depend_on_referenced_packages
+import 'package:supabase/supabase.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
-void main() {
-  Supabase.initialize(
-    url: 'https://uazqhghjnbrvulrduaca.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhenFoZ2hqbmJydnVscmR1YWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQwNTczNjgsImV4cCI6MjAyOTYzMzM2OH0.Ntz1KxXeKciFQNva0iZLmv_TyKhhvk7iHtnX00uNS9I',
+class Entry {
+  final String stock;
+  final int crossover;
+  final DateTime date;
+
+  Entry({
+    required this.stock,
+    required this.crossover,
+    required this.date,
+  });
+
+  factory Entry.fromJson(Map<String, dynamic> json) {
+    return Entry(
+      stock: json['stock'] as String,
+      crossover: json['crossover'] as int,
+      date: DateTime.parse(json['date'] as String),
+    );
+  }
+}
+
+class BollingerCrossView extends StatefulWidget {
+  const BollingerCrossView({super.key});
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _BollingerCrossViewState createState() => _BollingerCrossViewState();
+}
+
+class _BollingerCrossViewState extends State<BollingerCrossView> {
+  late DateTime _selectedDate;
+  bool isLoading = false;
+  int _selectedCrossover = 1; // Default value is bullish
+  List<Entry> _responseData = [];
+  final SupabaseClient _supabaseClient = SupabaseClient(
+    'https://uazqhghjnbrvulrduaca.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhenFoZ2hqbmJydnVscmR1YWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQwNTczNjgsImV4cCI6MjAyOTYzMzM2OH0.Ntz1KxXeKciFQNva0iZLmv_TyKhhvk7iHtnX00uNS9I',
   );
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Satoshi',
-        primarySwatch: Colors.green,
-      ),
-      home: const MainScreen(),
-    );
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now();
   }
-}
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  Future<void> _fetchData() async {
+    setState(() {
+      isLoading = true;
+    });
+    final response = await _supabaseClient
+        .from('bolinger_cross')
+        .select()
+        .eq('date', _selectedDate.toString())
+        .eq('crossover', _selectedCrossover);
 
-  @override
-  _MainScreenState createState() => _MainScreenState();
-}
+    // print(response);
+    // if (response.isEmpty) {
+    //   return;
+    // }
 
-class _MainScreenState extends State<MainScreen> {
-  DateTime selectedDate = DateTime.now();
-
-  void _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != selectedDate) {
+    final List<dynamic> data = response;
+    if (data.isNotEmpty) {
       setState(() {
-        selectedDate = picked;
+        _responseData = data.map((entry) => Entry.fromJson(entry)).toList();
       });
+    } else {
+      setState(() {
+        _responseData = [];
+      });
+      // No data found
+      // print('No data found for the selected date and crossover.');
     }
-  }
-
-  Future<List<Map<String, dynamic>>> fetchRsiCrossoverData(
-      DateTime date) async {
-    final response = await Supabase.instance.client
-        .from('rsi_crossover')
-        .select('*')
-        .eq('date', date.toIso8601String().split('T')[0])
-        .order('cross_price_diff', ascending: true);
-
-    if (response.isEmpty) {
-      print('Error fetching RSI Crossover data');
-      return [];
-    }
-
-    return response;
-  }
-
-  Future<List<Map<String, dynamic>>> fetchStockDeliveryData(
-      String stock, DateTime date) async {
-    final response = await Supabase.instance.client
-        .from('stock_delivery')
-        .select('*')
-        .eq('stock', stock)
-        // .eq('date', date.toIso8601String().split('T')[0])
-        .order('date', ascending: false);
-
-    if (response.isEmpty) {
-      print('Error fetching Stock Delivery data');
-      return [];
-    }
-
-    return response;
+    setState(() {
+      isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('RSI Crossover List'),
-        actions: [
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => StockDeliverySearchPage()),
-              );
-            },
-            child: const Icon(Icons.list_alt),
-          )
-        ],
+        backgroundColor: const Color(0xff5aa212),
+        title: const Text(
+          '⚡ Bollinger Blast ⚡',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text("${selectedDate.toLocal()}".split(' ')[0]),
-                const SizedBox(height: 10.0),
-                ElevatedButton(
-                  onPressed: () => _selectDate(context),
-                  child: const Text('Select date'),
+                FittedBox(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Date:',
+                        style: TextStyle(fontSize: 18.0),
+                      ),
+                      // const SizedBox(height: 10.0),
+                      TextButton(
+                        onPressed: () {
+                          showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          ).then((pickedDate) {
+                            if (pickedDate != null) {
+                              setState(() {
+                                _selectedDate = pickedDate;
+                              });
+                            }
+                          });
+                        },
+                        child: Text(
+                          '${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}',
+                          style: const TextStyle(fontSize: 18.0),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                FittedBox(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Crossover:',
+                        style: TextStyle(fontSize: 18.0),
+                      ),
+                      Row(
+                        children: [
+                          Radio(
+                            value: 1,
+                            groupValue: _selectedCrossover,
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCrossover = value as int;
+                              });
+                            },
+                          ),
+                          const Text('Bullish'),
+                          const SizedBox(width: 20.0),
+                          Radio(
+                            value: -1,
+                            groupValue: _selectedCrossover,
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCrossover = value as int;
+                              });
+                            },
+                          ),
+                          const Text('Bearish'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // const SizedBox(width: 20.0),
               ],
             ),
-          ),
-          Expanded(
-            child: FutureBuilder(
-              future: fetchRsiCrossoverData(selectedDate),
-              builder: (context,
-                  AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                final List<Map<String, dynamic>> data = snapshot.data ?? [];
-
-                return ListView.builder(
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                    final item = data[index];
-                    return ExpansionTile(
-                      trailing: InkWell(
-                        onTap: () async {
-                          final Uri url = Uri.parse(
-                              'https://in.tradingview.com/chart/?symbol=NSE%3A${item['stock']}');
-                          if (!await launchUrl(
-                            url,
-                            mode: LaunchMode.inAppWebView,
-                            webOnlyWindowName: kIsWeb ? '_blank' : '_self',
-                          )) {
-                            throw Exception('Could not launch $url');
-                          }
-                        },
-                        child: const Icon(Icons.arrow_right_alt_rounded),
-                      ),
-                      title: Text(
-                        item['stock'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle:
-                          Text('Cross Price Diff: ${item['cross_price_diff']}'),
-                      children: [
-                        FutureBuilder(
-                          future: fetchStockDeliveryData(
-                              item['stock'], selectedDate),
-                          builder: (context,
-                              AsyncSnapshot<List<Map<String, dynamic>>>
-                                  snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-
-                            if (snapshot.hasError) {
-                              return Center(
-                                  child: Text('Error: ${snapshot.error}'));
-                            }
-
-                            final List<Map<String, dynamic>> deliveryData =
-                                snapshot.data ?? [];
-
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const ClampingScrollPhysics(),
-                              itemCount: deliveryData.length,
-                              itemBuilder: (context, index) {
-                                final deliveryItem = deliveryData[index];
-                                return ListTile(
-                                  title: Text(
-                                      'Delivery: ${deliveryItem['delivery_percentage']}%'),
-                                  subtitle:
-                                      Text('Date: ${deliveryItem['date']}'),
-                                );
-                              },
-                            );
-                          },
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              child: ElevatedButton(
+                style: const ButtonStyle(
+                  backgroundColor: MaterialStatePropertyAll(Color(0xff5aa212)),
+                ),
+                onPressed: isLoading ? null : _fetchData,
+                child: isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white)),
+                      )
+                    : const Text(
+                        'Get Data',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 16,
                         ),
-                      ],
-                    );
-                  },
-                );
-              },
+                      ),
+              ),
             ),
-          ),
-        ],
+            const Divider(),
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Expanded(
+                    child: _responseData.isNotEmpty
+                        ? ListView.builder(
+                            itemCount: _responseData.length,
+                            itemBuilder: (context, index) {
+                              final entry = _responseData[index];
+                              return ListTile(
+                                onTap: () async {
+                                  final Uri url = Uri.parse(
+                                      'https://in.tradingview.com/chart/?symbol=NSE%3A${entry.stock}');
+                                  if (!await launchUrl(
+                                    url,
+                                    mode: LaunchMode.inAppWebView,
+                                    webOnlyWindowName:
+                                        kIsWeb ? '_blank' : '_self',
+                                  )) {
+                                    throw Exception('Could not launch $url');
+                                  }
+                                },
+                                leading: Text("${index + 1}"),
+                                title: Text(entry.stock),
+                                // subtitle: Text(entry.date.toString()),
+                                trailing: Text(
+                                  entry.crossover == 1 ? 'Bullish' : 'Bearish',
+                                  style: TextStyle(
+                                    color: entry.crossover == 1
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : const Center(
+                            child: Text(
+                              "💔\nNO STOCKS FOUND.!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red),
+                            ),
+                          ),
+                  ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+void main() {
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: "Bolinger Blast",
+    theme: ThemeData(
+      fontFamily: 'Satoshi',
+      primarySwatch: Colors.green,
+    ),
+    home: const Splash(),
+  ));
+}
+
+class Splash extends StatelessWidget {
+  const Splash({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSplashScreen(
+      splashIconSize: MediaQuery.of(context).size.width * .60,
+      splash: Lottie.asset('assets/icons/Animation - 1714463822927.json'),
+      nextScreen: const BollingerCrossView(),
+      duration: 2000,
+      splashTransition: SplashTransition.scaleTransition,
     );
   }
 }
