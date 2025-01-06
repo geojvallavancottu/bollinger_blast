@@ -40,8 +40,8 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
   int _selectedCrossover = 1; // Default value is bullish
   List<Entry> _responseData = [];
   final SupabaseClient _supabaseClient = SupabaseClient(
-    'https://uazqhghjnbrvulrduaca.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhenFoZ2hqbmJydnVscmR1YWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQwNTczNjgsImV4cCI6MjAyOTYzMzM2OH0.Ntz1KxXeKciFQNva0iZLmv_TyKhhvk7iHtnX00uNS9I',
+    'https://zupoorksdnsivvijzsqd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1cG9vcmtzZG5zaXZ2aWp6c3FkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxNzkwODksImV4cCI6MjA1MTc1NTA4OX0.6IsoiKMFnq7_TE7gURZaNdPwHAp-43xNGwaCyE1hX-8',
   );
 
   @override
@@ -55,7 +55,7 @@ class _BollingerCrossViewState extends State<BollingerCrossView> {
       isLoading = true;
     });
     final response = await _supabaseClient
-        .from('bolinger_cross')
+        .from('envelope_buy')
         .select()
         .eq('date', _selectedDate.toString())
         .eq('crossover', _selectedCrossover);
